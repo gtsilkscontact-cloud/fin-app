@@ -16,6 +16,12 @@ const reducer = (state, action) => {
             return action.payload;
         case 'ADD_ACCOUNT':
             return { ...state, accounts: [...state.accounts, action.payload] };
+        case 'DELETE_ACCOUNT':
+            return {
+                ...state,
+                accounts: state.accounts.filter(a => a.id !== action.payload),
+                transactions: state.transactions.filter(t => t.accountId !== action.payload)
+            };
         case 'ADD_TRANSACTION':
             return { ...state, transactions: [action.payload, ...state.transactions] };
         case 'ADD_TRANSACTIONS_BULK':
@@ -71,6 +77,10 @@ export const TransactionProvider = ({ children }) => {
         dispatch({ type: 'ADD_TRANSACTIONS_BULK', payload: transactions });
     };
 
+    const deleteAccount = (accountId) => {
+        dispatch({ type: 'DELETE_ACCOUNT', payload: accountId });
+    };
+
     return (
         <TransactionContext.Provider
             value={{
@@ -78,6 +88,7 @@ export const TransactionProvider = ({ children }) => {
                 transactions: state.transactions,
                 isLoaded,
                 addAccount,
+                deleteAccount,
                 addTransaction,
                 addTransactionsBulk,
             }}
