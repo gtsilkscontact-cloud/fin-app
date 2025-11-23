@@ -6,6 +6,10 @@ import BottomTabNavigator from './BottomTabNavigator';
 import AddAccountScreen from '../screens/AddAccountScreen';
 import AccountDetailScreen from '../screens/AccountDetailScreen';
 import AddTransactionScreen from '../screens/AddTransactionScreen';
+import ManageCardGroupsScreen from '../screens/ManageCardGroupsScreen';
+import EditCardGroupScreen from '../screens/EditCardGroupScreen';
+import EditAccountScreen from '../screens/EditAccountScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -32,6 +36,26 @@ const AppNavigator = () => {
                     name="AddTransaction"
                     component={AddTransactionScreen}
                     options={{ title: 'Add Transaction' }}
+                />
+                <Stack.Screen
+                    name="ManageCardGroups"
+                    component={ManageCardGroupsScreen}
+                    options={{ title: 'Manage Card Groups' }}
+                />
+                <Stack.Screen
+                    name="EditCardGroup"
+                    component={EditCardGroupScreen}
+                    options={{ title: 'Edit Card Group' }}
+                />
+                <Stack.Screen
+                    name="EditAccount"
+                    component={EditAccountScreen}
+                    options={{ title: 'Edit Account' }}
+                />
+                <Stack.Screen
+                    name="Notifications"
+                    component={NotificationsScreen}
+                    options={{ title: 'Notifications' }}
                 />
             </Stack.Navigator>
         </NavigationContainer>

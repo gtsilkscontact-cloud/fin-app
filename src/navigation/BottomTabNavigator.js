@@ -1,20 +1,31 @@
 import React from 'react';
 import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import HomeScreen from '../screens/HomeScreen';
 import TransactionsScreen from '../screens/TransactionsScreen';
+import BudgetScreen from '../screens/BudgetScreen';
 import AnalysisScreen from '../screens/AnalysisScreen';
-import DetailsScreen from '../screens/DetailsScreen';
+import CardsScreen from '../screens/CardsScreen';
 
 const Tab = createBottomTabNavigator();
 
 const BottomTabNavigator = () => {
+    const insets = useSafeAreaInsets();
+
     return (
         <Tab.Navigator
             screenOptions={{
                 tabBarActiveTintColor: '#6200ee',
                 tabBarInactiveTintColor: '#666',
-                tabBarStyle: { paddingBottom: 5, paddingTop: 5, height: 60 },
+                tabBarStyle: {
+                    paddingBottom: Math.max(insets.bottom, 4),
+                    paddingTop: 4,
+                    height: 56 + Math.max(insets.bottom, 4),
+                    borderTopWidth: 1,
+                    borderTopColor: '#e0e0e0',
+                    backgroundColor: '#fff'
+                },
                 headerShown: false,
             }}
         >
@@ -35,6 +46,14 @@ const BottomTabNavigator = () => {
                 }}
             />
             <Tab.Screen
+                name="Budgets"
+                component={BudgetScreen}
+                options={{
+                    tabBarLabel: 'Budgets',
+                    tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>💰</Text>,
+                }}
+            />
+            <Tab.Screen
                 name="Analysis"
                 component={AnalysisScreen}
                 options={{
@@ -43,10 +62,10 @@ const BottomTabNavigator = () => {
                 }}
             />
             <Tab.Screen
-                name="Details"
-                component={DetailsScreen}
+                name="Cards"
+                component={CardsScreen}
                 options={{
-                    tabBarLabel: 'Details',
+                    tabBarLabel: 'Cards',
                     tabBarIcon: ({ color }) => <Text style={{ fontSize: 24 }}>📋</Text>,
                 }}
             />

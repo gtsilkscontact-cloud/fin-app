@@ -1,13 +1,13 @@
 import React, { useEffect, useContext } from 'react';
 import { View, Text, Platform, Alert } from 'react-native';
 import * as SMS from '@maniac-tech/react-native-expo-read-sms';
-import * as Location from 'expo-location';
+import * as Notifications from 'expo-notifications';
 import TransactionContext from '../context/TransactionContext';
 import { getCurrentLocationWithArea } from '../utils/LocationHelper';
 import { parseAxisBankSms } from '../utils/SmsParser';
 
 const SmsListener = () => {
-    const { addTransaction, accounts } = useContext(TransactionContext);
+    const { addPendingTransaction, accounts } = useContext(TransactionContext);
 
     useEffect(() => {
         if (Platform.OS !== 'android') return;
@@ -23,10 +23,12 @@ const SmsListener = () => {
             }
         };
 
-        // startListening(); // Commented out to prevent crashes in Expo Go if native module is missing or incompatible
+        // startListening(); // Commented out for Expo Go safety. Uncomment for build.
 
-        // Mock implementation for Expo Go / Development
-        // In a real build, you would uncomment the above and handle the SMS object.
+        // Mock SMS for testing (Triggered once on mount for demo purposes if needed, or remove)
+        // setTimeout(() => {
+        //    processSms("Rs. 500.00 spent on AXIS Bank Credit Card XX1234 at STARBUCKS on 23-11-2025.", "AXISBK");
+        // }, 5000);
 
         return () => {
             if (Platform.OS === 'android') {
@@ -37,7 +39,7 @@ const SmsListener = () => {
 
     const processSms = async (smsBody, sender) => {
         // Filter by sender (heuristic)
-        if (!sender.toUpperCase().includes("AXISBK")) return;
+        if (!sender.toUpperCase().includes("AXISBK") && !sender.toUpperCase().includes("HDFC")) return;
 
         const parsedData = parseAxisBankSms(smsBody);
         if (!parsedData) return;
@@ -45,7 +47,7 @@ const SmsListener = () => {
         const { amount, type, last4Digits, date, description } = parsedData;
 
         // Find matching account
-        let accountId = accounts.length > 0 ? accounts[0].id : null;
+        let accountId = null;
         if (last4Digits) {
             const matchedAccount = accounts.find(a => a.last4Digits === last4Digits);
             if (matchedAccount) {
@@ -53,26 +55,34 @@ const SmsListener = () => {
             }
         }
 
-        if (!accountId) return; // Should not happen if accounts exist, but safety check
-
         const location = await getCurrentLocationWithArea();
 
         const newTransaction = {
-            id: Date.now().toString(),
-            accountId,
+            id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            accountId, // Can be null if not found, user will select in AddTransaction
             amount,
             type,
-            category: 'SMS Auto',
+            category: 'Uncategorized', // Default for pending
             note: description,
             date,
-            location
+            location,
+            originalSms: smsBody
         };
 
-        addTransaction(newTransaction);
-        Alert.alert("New Transaction", `Auto-added ${type} of ₹${amount} to account ending in ${last4Digits || 'XX'}`);
+        addPendingTransaction(newTransaction);
+
+        // Trigger Local Notification
+        await Notifications.scheduleNotificationAsync({
+            content: {
+                title: "New Transaction Detected",
+                body: `₹${amount} at ${description || 'Unknown'}. Tap to categorize.`,
+                data: { transactionId: newTransaction.id },
+            },
+            trigger: null, // Immediate
+        });
     };
 
-    return null; // Invisible component
+    return null;
 };
 
 export default SmsListener;
