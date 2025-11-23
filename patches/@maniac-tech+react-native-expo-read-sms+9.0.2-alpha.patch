@@ -1,0 +1,31 @@
+diff --git a/node_modules/@maniac-tech/react-native-expo-read-sms/android/src/main/java/com/reactlibrary/RNExpoReadSmsModule.java b/node_modules/@maniac-tech/react-native-expo-read-sms/android/src/main/java/com/reactlibrary/RNExpoReadSmsModule.java
+index f78f1fe..f94de17 100644
+--- a/node_modules/@maniac-tech/react-native-expo-read-sms/android/src/main/java/com/reactlibrary/RNExpoReadSmsModule.java
++++ b/node_modules/@maniac-tech/react-native-expo-read-sms/android/src/main/java/com/reactlibrary/RNExpoReadSmsModule.java
+@@ -1,7 +1,8 @@
+-
+ package com.reactlibrary;
+ 
+ import android.Manifest;
++import android.os.Build;
++import android.app.Activity;
+ import android.content.BroadcastReceiver;
+ import android.content.Context;
+ import android.content.Intent;
+@@ -39,6 +40,7 @@ public class RNExpoReadSmsModule extends ReactContextBaseJavaModule {
+ 
+   @ReactMethod
+   public void startReadSMS(final Callback success, final Callback error) {
++    final Activity activity = getCurrentActivity();
+     try{
+       if (ContextCompat.checkSelfPermission(reactContext, Manifest.permission.RECEIVE_SMS) == PackageManager.PERMISSION_GRANTED
+               && ContextCompat.checkSelfPermission(reactContext, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED) {
+@@ -50,7 +52,7 @@ public class RNExpoReadSmsModule extends ReactContextBaseJavaModule {
+           }
+         };
+         String SMS_RECEIVED_ACTION = "android.provider.Telephony.SMS_RECEIVED";
+-        if(Build.VERSION.SDK_INT >= 34 && getApplicationInfo().targetSdkVersion >= 34) {
++        if(Build.VERSION.SDK_INT >= 34 && getReactApplicationContext().getApplicationInfo().targetSdkVersion >= 34) {
+           reactContext.registerReceiver(msgReceiver, new IntentFilter(SMS_RECEIVED_ACTION), Context.RECEIVER_EXPORTED);
+         } else {
+           reactContext.registerReceiver(msgReceiver, new IntentFilter(SMS_RECEIVED_ACTION));
