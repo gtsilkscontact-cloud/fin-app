@@ -1,3 +1,22 @@
+diff --git a/node_modules/@maniac-tech/react-native-expo-read-sms/android/build.gradle b/node_modules/@maniac-tech/react-native-expo-read-sms/android/build.gradle
+index 6cef1b4..74c662a 100644
+--- a/node_modules/@maniac-tech/react-native-expo-read-sms/android/build.gradle
++++ b/node_modules/@maniac-tech/react-native-expo-read-sms/android/build.gradle
+@@ -17,7 +17,7 @@ android {
+     namespace "com.reactlibrary"
+     defaultConfig {
+         compileSdk 34
+-        minSdkVersion 34
++        minSdkVersion 24
+         targetSdkVersion 34
+         versionCode 1
+         versionName "1.0"
+@@ -36,4 +36,3 @@ dependencies {
+     implementation 'com.facebook.react:react-native:0.73.6'
+     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+ }
+-  
+\ No newline at end of file
 diff --git a/node_modules/@maniac-tech/react-native-expo-read-sms/android/src/main/java/com/reactlibrary/RNExpoReadSmsModule.java b/node_modules/@maniac-tech/react-native-expo-read-sms/android/src/main/java/com/reactlibrary/RNExpoReadSmsModule.java
 index f78f1fe..f94de17 100644
 --- a/node_modules/@maniac-tech/react-native-expo-read-sms/android/src/main/java/com/reactlibrary/RNExpoReadSmsModule.java
