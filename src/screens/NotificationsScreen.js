@@ -65,10 +65,6 @@ const NotificationsScreen = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>🔔 Notifications</Text>
-            </View>
-
             <FlatList
                 data={pendingTransactions}
                 renderItem={renderItem}
@@ -87,8 +83,6 @@ const NotificationsScreen = () => {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#f5f5f5' },
-    header: { padding: 20, backgroundColor: '#6200ee' },
-    headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
     list: { padding: 16 },
     card: { backgroundColor: '#fff', borderRadius: 12, marginBottom: 16, elevation: 2, overflow: 'hidden' },
     cardContent: { padding: 16 },

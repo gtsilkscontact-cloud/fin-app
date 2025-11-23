@@ -16,6 +16,7 @@ const AddTransactionScreen = () => {
     const [loading, setLoading] = useState(false);
     const [selectedAccountId, setSelectedAccountId] = useState(null);
     const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+    const [currentLocation, setCurrentLocation] = useState(null);
 
     const { addTransaction, updateTransaction, accounts, customCategories, confirmTransaction } = useContext(TransactionContext);
     const navigation = useNavigation();
@@ -37,18 +38,31 @@ const AddTransactionScreen = () => {
                 : transaction.category;
             setSelectedCategory(categoryId);
             if (transaction.accountId) setSelectedAccountId(transaction.accountId);
+            if (transaction.location) setCurrentLocation(transaction.location);
         } else if (prefill) {
             // Pre-fill from pending transaction
             setAmount(prefill.amount.toString());
             setType(prefill.type);
             setNote(prefill.note || '');
             if (prefill.accountId) setSelectedAccountId(prefill.accountId);
+            if (prefill.location) setCurrentLocation(prefill.location);
         } else if (accountIdFromRoute) {
             setSelectedAccountId(accountIdFromRoute);
         } else if (accounts && accounts.length > 0) {
             setSelectedAccountId(accounts[0].id);
         }
     }, [accountIdFromRoute, accounts, prefill, editMode, transaction]);
+
+    // Fetch location on mount for new transactions
+    useEffect(() => {
+        if (!editMode && !prefill) {
+            const fetchLocation = async () => {
+                const locationString = await getCurrentLocationWithArea();
+                setCurrentLocation(locationString);
+            };
+            fetchLocation();
+        }
+    }, [editMode, prefill]);
 
     const handleSave = async () => {
         if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
@@ -164,6 +178,15 @@ const AddTransactionScreen = () => {
                 )}
             </TouchableOpacity>
 
+            {currentLocation && (
+                <>
+                    <Text style={styles.label}>📍 Location</Text>
+                    <View style={styles.locationDisplay}>
+                        <Text style={styles.locationText}>{currentLocation}</Text>
+                    </View>
+                </>
+            )}
+
             <Text style={styles.label}>📝 Note (Optional)</Text>
             <TextInput
                 style={[styles.input, styles.noteInput]}
@@ -229,6 +252,19 @@ const styles = StyleSheet.create({
     categoryPlaceholder: {
         fontSize: 16,
         color: '#999',
+    },
+    locationDisplay: {
+        backgroundColor: '#f0f9ff',
+        borderWidth: 1,
+        borderColor: '#bfdbfe',
+        borderRadius: 10,
+        padding: 12,
+        marginBottom: 20,
+    },
+    locationText: {
+        fontSize: 14,
+        color: '#1e40af',
+        fontWeight: '500',
     },
     saveButton: { backgroundColor: '#6200ee', padding: 15, borderRadius: 10, alignItems: 'center', marginTop: 10 },
     saveButtonText: { color: '#fff', fontSize: 18, fontWeight: 'bold' },

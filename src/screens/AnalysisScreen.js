@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
     container: { flex: 1 },
     header: { padding: 20, paddingTop: 10, backgroundColor: '#6200ee' },
     headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
-    filterContainer: { paddingHorizontal: 16, marginBottom: 10, flexDirection: 'row' },
+    filterContainer: { paddingHorizontal: 16, marginBottom: 10, marginTop: 16, flexDirection: 'row' },
     filterChip: {
         flexDirection: 'row',
         alignItems: 'center',
