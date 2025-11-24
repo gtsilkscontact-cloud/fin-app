@@ -42,7 +42,7 @@ const AddTransactionScreen = () => {
         } else if (prefill) {
             // Pre-fill from pending transaction
             setAmount(prefill.amount.toString());
-            setType(prefill.type);
+            setType(prefill.type.toUpperCase()); // Convert to uppercase for button matching
             // Use merchantName if available, otherwise use note
             setNote(prefill.merchantName || prefill.note || '');
             if (prefill.accountId) setSelectedAccountId(prefill.accountId);

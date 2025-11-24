@@ -2,9 +2,12 @@ import React, { useState, useContext, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput, ScrollView, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import TransactionContext from '../context/TransactionContext';
 import { getCategoryDisplay } from '../utils/CategoryManager';
+import AmountDisplay from '../components/AmountDisplay';
+import { Colors, Spacing, BorderRadius, Typography, Shadows } from '../utils/DesignTokens';
 
 const TransactionsScreen = () => {
     const { transactions, accounts, customCategories, deleteTransaction } = useContext(TransactionContext);
@@ -95,23 +98,33 @@ const TransactionsScreen = () => {
         return (
             <View style={styles.transactionCard}>
                 <View style={styles.transactionLeft}>
-                    <View style={styles.iconContainer}>
+                    <View style={styles.iconCircle}>
                         <Text style={styles.categoryEmoji}>{category.emoji}</Text>
                     </View>
-                    <View style={styles.transactionDetails}>
+                    <View style={styles.transactionInfo}>
                         <Text style={styles.categoryName}>{category.name}</Text>
-                        <Text style={styles.accountName}>
-                            {account ? account.name : 'Unknown Account'} • {item.date}
-                        </Text>
-                        {item.description ? (
-                            <Text style={styles.description} numberOfLines={1}>{item.description}</Text>
-                        ) : null}
+                        {item.merchantName && (
+                            <Text style={styles.merchantName}>{item.merchantName}</Text>
+                        )}
+                        <View style={styles.metaRow}>
+                            <Text style={styles.accountName}>
+                                {account ? account.name : 'Unknown'}
+                            </Text>
+                            <Text style={styles.metaDot}> • </Text>
+                            <Text style={styles.date}>{item.date}</Text>
+                        </View>
+                        {item.location && (
+                            <Text style={styles.locationText} numberOfLines={1}>📍 {item.location}</Text>
+                        )}
                     </View>
                 </View>
                 <View style={styles.transactionRight}>
-                    <Text style={[styles.amount, isIncome ? styles.incomeText : styles.expenseText]}>
-                        {isIncome ? '+' : '-'}₹{item.amount.toFixed(2)}
-                    </Text>
+                    <AmountDisplay
+                        amount={item.amount}
+                        type={isIncome ? 'income' : 'expense'}
+                        size="small"
+                        showSign={true}
+                    />
                     <View style={styles.actionButtons}>
                         <TouchableOpacity onPress={() => navigation.navigate('AddTransaction', {
                             editMode: true,
@@ -270,7 +283,8 @@ const TransactionsScreen = () => {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>📊 Transactions</Text>
+                <Text style={styles.headerTitle}>Transactions</Text>
+                <Text style={styles.headerSubtitle}>{filteredTransactions.length} total</Text>
             </View>
 
             <View style={styles.searchContainer}>
@@ -320,42 +334,53 @@ const TransactionsScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f5f5f5' },
+    container: { flex: 1, backgroundColor: Colors.background },
     header: {
-        backgroundColor: '#6200ee',
-        padding: 20,
-        paddingTop: 10,
+        padding: Spacing.xl,
+        paddingTop: Spacing.md,
     },
-    headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
-    searchContainer: { padding: 16, paddingBottom: 8 },
+    headerTitle: {
+        fontSize: Typography.xxxl,
+        fontWeight: Typography.bold,
+        color: Colors.textPrimary
+    },
+    headerSubtitle: {
+        fontSize: Typography.base,
+        color: Colors.textSecondary,
+        marginTop: Spacing.xs,
+    },
+    searchContainer: { padding: Spacing.lg, paddingBottom: Spacing.sm },
     searchInput: {
-        backgroundColor: '#fff',
-        padding: 12,
-        borderRadius: 10,
-        fontSize: 16,
-        elevation: 2,
+        backgroundColor: Colors.surface,
+        padding: Spacing.md,
+        borderRadius: BorderRadius.md,
+        fontSize: Typography.md,
+        ...Shadows.sm,
     },
-    filterContainer: { paddingHorizontal: 16, marginBottom: 10, flexDirection: 'row' },
-    categoryFilterContainer: { paddingHorizontal: 16, marginBottom: 10, flexDirection: 'row' },
-    customDateRow: { flexDirection: 'row', paddingHorizontal: 16, marginBottom: 10, gap: 10 },
-    datePickerBtn: { flex: 1, padding: 12, backgroundColor: '#fff', borderRadius: 8, elevation: 2 },
-    dateLbl: { fontSize: 12, color: '#666', marginBottom: 4 },
-    dateVal: { fontSize: 14, fontWeight: '600', color: '#333' },
+    filterContainer: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.md, flexDirection: 'row' },
+    categoryFilterContainer: { paddingHorizontal: Spacing.lg, marginBottom: Spacing.md, flexDirection: 'row' },
+    customDateRow: { flexDirection: 'row', paddingHorizontal: Spacing.lg, marginBottom: Spacing.md, gap: Spacing.md },
+    datePickerBtn: { flex: 1, padding: Spacing.md, backgroundColor: Colors.surface, borderRadius: BorderRadius.sm, ...Shadows.sm },
+    dateLbl: { fontSize: Typography.sm, color: Colors.textSecondary, marginBottom: Spacing.xs },
+    dateVal: { fontSize: Typography.base, fontWeight: Typography.semibold, color: Colors.textPrimary },
     filterChip: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#fff',
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 20,
-        marginRight: 10,
-        borderWidth: 1,
-        borderColor: '#ddd',
+        backgroundColor: Colors.surface,
+        paddingVertical: Spacing.sm,
+        paddingHorizontal: Spacing.lg,
+        borderRadius: BorderRadius.pill,
+        marginRight: Spacing.md,
+        borderWidth: 2,
+        borderColor: Colors.gray200,
     },
-    filterChipActive: { backgroundColor: '#6200ee', borderColor: '#6200ee' },
-    filterEmoji: { marginRight: 6, fontSize: 16 },
-    filterText: { color: '#333', fontWeight: '600' },
-    filterTextActive: { color: '#fff' },
+    filterChipActive: {
+        backgroundColor: Colors.primary,
+        borderColor: Colors.primary
+    },
+    filterEmoji: { marginRight: Spacing.sm, fontSize: 16 },
+    filterText: { color: Colors.textPrimary, fontWeight: Typography.semibold },
+    filterTextActive: { color: Colors.textInverse },
     categoryFilterChip: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -376,38 +401,64 @@ const styles = StyleSheet.create({
     filterLink: { color: '#6200ee', fontWeight: '600', fontSize: 14 },
     listContent: { padding: 16, paddingTop: 0 },
     transactionCard: {
-        backgroundColor: '#fff',
-        padding: 16,
-        borderRadius: 12,
-        marginBottom: 12,
+        backgroundColor: Colors.surface,
+        padding: Spacing.lg,
+        borderRadius: BorderRadius.md,
+        marginBottom: Spacing.md,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        elevation: 2,
+        ...Shadows.sm,
     },
     transactionLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-    iconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#f0f0f0',
+    iconCircle: {
+        width: 48,
+        height: 48,
+        borderRadius: BorderRadius.full,
+        backgroundColor: Colors.gray100,
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 12,
+        marginRight: Spacing.md,
     },
-    categoryEmoji: { fontSize: 20 },
-    transactionDetails: { flex: 1 },
-    categoryName: { fontSize: 16, fontWeight: '600', color: '#333' },
-    accountName: { fontSize: 12, color: '#999', marginTop: 2 },
-    description: { fontSize: 12, color: '#666', marginTop: 2, fontStyle: 'italic' },
+    categoryEmoji: { fontSize: 24 },
+    transactionInfo: { flex: 1 },
+    categoryName: {
+        fontSize: Typography.md,
+        fontWeight: Typography.semibold,
+        color: Colors.textPrimary
+    },
+    merchantName: {
+        fontSize: Typography.sm,
+        color: Colors.textSecondary,
+        marginTop: 2,
+    },
+    metaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: Spacing.xs,
+    },
+    accountName: {
+        fontSize: Typography.xs,
+        color: Colors.textTertiary
+    },
+    metaDot: {
+        fontSize: Typography.xs,
+        color: Colors.textTertiary,
+    },
+    date: {
+        fontSize: Typography.xs,
+        color: Colors.textTertiary,
+    },
+    locationText: {
+        fontSize: Typography.xs,
+        color: Colors.success,
+        marginTop: 2,
+    },
     transactionRight: { alignItems: 'flex-end' },
-    amount: { fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
-    incomeText: { color: '#00B894' },
-    expenseText: { color: '#FF6B6B' },
-    actionButtons: { flexDirection: 'row', gap: 8, marginTop: 4 },
-    editButton: { padding: 4 },
+    actionButtons: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
+    editButton: { padding: Spacing.xs },
     editIcon: { fontSize: 16 },
-    deleteButton: { padding: 4 },
+    deleteButton: { padding: Spacing.xs },
     deleteIcon: { fontSize: 16 },
     emptyContainer: { alignItems: 'center', marginTop: 50 },
     emptyText: { color: '#999', fontSize: 16 },

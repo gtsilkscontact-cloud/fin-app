@@ -269,7 +269,9 @@ const BudgetScreen = () => {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>💰 Budgets</Text>
+                <View>
+                    <Text style={styles.headerTitle}>💰 Budgets</Text>
+                </View>
                 <TouchableOpacity
                     style={styles.addButton}
                     onPress={() => setShowModal(true)}
@@ -353,19 +355,18 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        backgroundColor: '#6200ee',
         padding: 20,
         paddingTop: 10,
     },
-    headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
+    headerTitle: { fontSize: 28, fontWeight: 'bold', color: '#333' },
     addButton: {
-        backgroundColor: '#fff',
+        backgroundColor: '#6200ee',
         paddingVertical: 8,
         paddingHorizontal: 15,
         borderRadius: 20,
     },
     addButtonText: {
-        color: '#6200ee',
+        color: '#fff',
         fontWeight: 'bold',
         fontSize: 14,
     },

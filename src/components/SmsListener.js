@@ -1,4 +1,4 @@
-import React, { useEffect, useContext, useState } from 'react';
+import React, { useEffect, useContext, useState, forwardRef, useImperativeHandle } from 'react';
 import { Platform, PermissionsAndroid } from 'react-native';
 import ReadSms from '@maniac-tech/react-native-expo-read-sms';
 import * as Notifications from 'expo-notifications';
@@ -7,9 +7,17 @@ import { parseAxisBankSms } from '../utils/SmsParser';
 import { getCurrentLocationWithArea } from '../utils/LocationHelper';
 
 
-const SmsListener = () => {
+const SmsListener = forwardRef((props, ref) => {
     const { addPendingTransaction, accounts, transactions, pendingTransactions } = useContext(TransactionContext);
     const [processedSmsIds, setProcessedSmsIds] = useState(new Set());
+
+    // Expose handleIncomingSms for testing purposes
+    useImperativeHandle(ref, () => ({
+        simulateSms: async (sender, body) => {
+            console.log('🧪 Test SMS simulation triggered');
+            await handleIncomingSms(sender, body);
+        }
+    }));
 
     useEffect(() => {
         if (Platform.OS !== 'android') return;
@@ -185,6 +193,6 @@ const SmsListener = () => {
     };
 
     return null;
-};
+});
 
 export default SmsListener;

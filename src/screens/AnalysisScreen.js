@@ -5,11 +5,12 @@ import { PieChart, BarChart } from 'react-native-gifted-charts';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import TransactionContext from '../context/TransactionContext';
 import { getCategoryDisplay } from '../utils/CategoryManager';
+import { calculateAvailableCredit, getCardsInGroup } from '../utils/CreditCalculator';
 
 const { width } = Dimensions.get('window');
 
 const AnalysisScreen = () => {
-    const { transactions, customCategories, accounts } = useContext(TransactionContext);
+    const { transactions, customCategories, accounts, cardGroups } = useContext(TransactionContext);
     const [selectedSlice, setSelectedSlice] = useState(null);
     const [dateRange, setDateRange] = useState('THIS_MONTH'); // THIS_MONTH, LAST_MONTH, 6_MONTHS, 1_YEAR, ALL_TIME, CUSTOM
     const [customStartDate, setCustomStartDate] = useState(new Date());
@@ -118,6 +119,72 @@ const AnalysisScreen = () => {
 
         return { income, expense };
     }, [filteredTransactions]);
+
+    // Calculate Financial Health (Net Worth vs Spending Power)
+    const financialHealth = useMemo(() => {
+        let totalCashBank = 0;
+        let totalCreditDebt = 0;
+        let totalCreditLimit = 0;
+        let totalAvailableCredit = 0;
+
+        // Calculate Bank + Cash
+        (accounts || []).forEach(acc => {
+            if (acc.type === 'BANK' || acc.type === 'CASH') {
+                // Calculate current balance for this account
+                const accountTransactions = (transactions || []).filter(t => t.accountId === acc.id);
+                const income = accountTransactions.filter(t => t.type === 'income' || t.type === 'INCOME').reduce((s, t) => s + t.amount, 0);
+                const expense = accountTransactions.filter(t => t.type === 'expense' || t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0);
+                totalCashBank += (acc.startingBalance || 0) + income - expense;
+            } else if (acc.type === 'CREDIT_CARD') {
+                // Calculate Debt
+                const accountTransactions = (transactions || []).filter(t => t.accountId === acc.id);
+                const spent = accountTransactions.reduce((sum, t) => {
+                    const type = t.type ? t.type.toLowerCase() : '';
+                    if (type === 'expense') return sum + t.amount;
+                    if (type === 'payment') return sum - t.amount;
+                    return sum;
+                }, 0);
+
+                // Debt is starting balance + spent (since payments reduce debt)
+                // Note: startingBalance for CC is usually initial debt
+                const currentDebt = (acc.startingBalance || 0) + spent;
+                totalCreditDebt += currentDebt;
+
+                // Calculate Limit & Available
+                if (acc.cardGroup) {
+                    // Handle Group Logic (avoid double counting shared limits)
+                    // We need to check if we've processed this group already?
+                    // Actually, simpler: Iterate groups separately for limits, and cards for debt.
+                } else {
+                    totalCreditLimit += (acc.creditLimit || 0);
+                    totalAvailableCredit += ((acc.creditLimit || 0) - currentDebt);
+                }
+            }
+        });
+
+        // Correct Limit Calculation for Groups
+        const processedGroups = new Set();
+        (accounts || []).filter(a => a.type === 'CREDIT_CARD' && a.cardGroup).forEach(acc => {
+            if (!processedGroups.has(acc.cardGroup)) {
+                processedGroups.add(acc.cardGroup);
+                const group = (cardGroups || []).find(g => g.id === acc.cardGroup);
+                if (group) {
+                    totalCreditLimit += (group.sharedCreditLimit || 0);
+
+                    // Calculate Group Debt
+                    const cardIds = getCardsInGroup(accounts, group.id).map(c => c.id);
+                    const groupAvail = calculateAvailableCredit(group.sharedCreditLimit, transactions, cardIds, group.startingBalance);
+                    totalAvailableCredit += groupAvail;
+                }
+            }
+        });
+
+        const netWorth = totalCashBank - totalCreditDebt;
+        const spendingPower = totalCashBank + totalAvailableCredit;
+        const utilization = totalCreditLimit > 0 ? (totalCreditDebt / totalCreditLimit) * 100 : 0;
+
+        return { netWorth, spendingPower, utilization };
+    }, [accounts, transactions, cardGroups]);
 
     // Prepare Pie Chart Data (Category Breakdown)
     const pieData = useMemo(() => {
@@ -313,9 +380,45 @@ const AnalysisScreen = () => {
                     />
                 )}
 
+                {/* Financial Health Card */}
+                <View style={styles.summaryCard}>
+                    <Text style={styles.cardTitle}>Financial Health</Text>
+                    <View style={styles.summaryRow}>
+                        <View style={styles.summaryItem}>
+                            <Text style={styles.summaryLabel}>Net Worth</Text>
+                            <Text style={[styles.summaryValue, { color: '#6200ee' }]}>
+                                ₹{financialHealth.netWorth.toLocaleString()}
+                            </Text>
+                            <Text style={styles.miniLabel}>Real Assets</Text>
+                        </View>
+                        <View style={styles.summaryItem}>
+                            <Text style={styles.summaryLabel}>Spending Power</Text>
+                            <Text style={[styles.summaryValue, { color: '#03dac6' }]}>
+                                ₹{financialHealth.spendingPower.toLocaleString()}
+                            </Text>
+                            <Text style={styles.miniLabel}>Liquidity + Credit</Text>
+                        </View>
+                    </View>
+                    <View style={styles.netContainer}>
+                        <Text style={styles.summaryLabel}>Credit Utilization</Text>
+                        <View style={styles.progressBarBg}>
+                            <View style={[
+                                styles.progressBarFill,
+                                {
+                                    width: `${Math.min(financialHealth.utilization, 100)}%`,
+                                    backgroundColor: financialHealth.utilization > 30 ? '#f44336' : '#4caf50'
+                                }
+                            ]} />
+                        </View>
+                        <Text style={[styles.miniLabel, { marginTop: 5, textAlign: 'center' }]}>
+                            {financialHealth.utilization.toFixed(1)}% Used of Total Limit
+                        </Text>
+                    </View>
+                </View>
+
                 {/* Summary Card */}
                 <View style={styles.summaryCard}>
-                    <Text style={styles.cardTitle}>Summary</Text>
+                    <Text style={styles.cardTitle}>Period Summary</Text>
                     <View style={styles.summaryRow}>
                         <View style={styles.summaryItem}>
                             <Text style={styles.summaryLabel}>Income</Text>
@@ -438,8 +541,8 @@ const AnalysisScreen = () => {
 const styles = StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: '#f5f5f5' },
     container: { flex: 1 },
-    header: { padding: 20, paddingTop: 10, backgroundColor: '#6200ee' },
-    headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff' },
+    header: { padding: 20, paddingTop: 10 },
+    headerTitle: { fontSize: 28, fontWeight: 'bold', color: '#333' },
     filterContainer: { paddingHorizontal: 16, marginBottom: 10, marginTop: 16, flexDirection: 'row' },
     filterChip: {
         flexDirection: 'row',
