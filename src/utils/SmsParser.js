@@ -1,3 +1,7 @@
+/**
+ * Enhanced SMS parser for Axis Bank transaction messages
+ * Extracts: date, amount, type, last 4 digits, merchant/sender, transaction method
+ */
 export const parseAxisBankSms = (body) => {
     // Check if it's an OTP
     if (isOtp(body)) return null;
@@ -23,49 +27,111 @@ export const parseAxisBankSms = (body) => {
     const accountMatch = body.match(accountRegex);
     const last4Digits = accountMatch ? accountMatch[1] : null;
 
-    // Extract Date (Simple fallback to today if not found or complex)
-    // 22-11-25 18:27:16 IST
-    // We'll use current date for simplicity as parsing various date formats is error-prone
-    // and the SMS is usually received instantly.
-    const date = new Date().toISOString().split('T')[0];
+    // Extract Date from SMS (multiple formats)
+    // Format 1: "16-11-25, 17:56:09" or "16-11-25 17:56:09"
+    // Format 2: "23-11-25 23:24:40 IST"
+    // Format 3: "on 30-09-25 at 15:34:36 IST"
+    let date = null;
+    const datePatterns = [
+        /(\d{2}-\d{2}-\d{2})[,\s]+\d{2}:\d{2}:\d{2}/,  // 16-11-25, 17:56:09 or 16-11-25 17:56:09
+        /on\s+(\d{2}-\d{2}-\d{2})\s+at/i,               // on 30-09-25 at
+        /(\d{2}-\d{2}-\d{2})/                           // fallback: any DD-MM-YY
+    ];
 
-    // Extract Merchant/Description
-    let description = "SMS Transaction";
-    if (isDebit) {
-        // "Spent INR 439 ... 22-11-25 ... Payu*Swiggy Avl Limit..."
-        // Try to find text between date/time and "Avl Limit"
-        // This is tricky without strict format.
-        // Heuristic: Split by newlines, find the line that doesn't have keywords
-        const lines = body.split('\n').map(l => l.trim()).filter(l => l);
-        // Usually merchant is on its own line or after date
-        // For the example:
-        // Spent INR 439
-        // Axis Bank Card no. XX5516
-        // 22-11-25 18:27:16 IST
-        // Payu*Swiggy
-        // Avl Limit...
-
-        // We can try to grab the line that is NOT the amount line, NOT the card line, NOT the date line, NOT the limit line.
-        for (const line of lines) {
-            if (line.match(/Spent|Debited|INR|Rs\.|Card no|A\/c no|Avl Limit|Not you/i)) continue;
-            if (line.match(/\d{2}-\d{2}-\d{2}/)) continue; // Date line
-            description = line;
+    for (const pattern of datePatterns) {
+        const dateMatch = body.match(pattern);
+        if (dateMatch) {
+            // Convert DD-MM-YY to YYYY-MM-DD
+            const [day, month, year] = dateMatch[1].split('-');
+            const fullYear = `20${year}`; // Assuming 20xx
+            date = `${fullYear}-${month}-${day}`;
             break;
         }
+    }
+
+    // Fallback to current date if parsing fails
+    if (!date) {
+        date = new Date().toISOString().split('T')[0];
+    }
+
+    // Extract Transaction Method (UPI, NEFT, Card, etc.)
+    let transactionMethod = null;
+    if (body.match(/UPI/i)) {
+        transactionMethod = 'UPI';
+    } else if (body.match(/NEFT/i)) {
+        transactionMethod = 'NEFT';
+    } else if (body.match(/IMPS/i)) {
+        transactionMethod = 'IMPS';
+    } else if (body.match(/Card/i)) {
+        transactionMethod = 'Card';
+    } else if (body.match(/RTGS/i)) {
+        transactionMethod = 'RTGS';
+    }
+
+    // Extract Merchant/Sender Name
+    let merchantName = "Unknown";
+
+    if (isDebit) {
+        // For UPI transactions: "UPI/P2M/568615976445/SRUJANA NAZEER"
+        const upiMatch = body.match(/UPI\/[^\/]+\/[^\/]+\/([^\n\r]+)/i);
+        if (upiMatch) {
+            merchantName = upiMatch[1].trim();
+        } else {
+            // For Card transactions: Find line after date/time, before "Avl Limit"
+            // Split by newlines and find merchant line
+            const lines = body.split(/[\n\r]+/).map(l => l.trim()).filter(l => l);
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+
+                // Skip lines with known keywords
+                if (line.match(/Spent|Debited|INR|Rs\.|Card no|A\/c no|Axis Bank|Avl Limit|Not you|SMS BLOCK/i)) {
+                    continue;
+                }
+
+                // Skip date/time lines
+                if (line.match(/\d{2}-\d{2}-\d{2}/)) {
+                    continue;
+                }
+
+                // This should be the merchant line
+                if (line.length > 0 && line.length < 100) {
+                    merchantName = line;
+                    break;
+                }
+            }
+        }
     } else if (isCredit) {
-        // "INR ... credited ... Info - NEFT/..."
-        const infoMatch = body.match(/Info\s*-\s*(.*)/i);
+        // For credits: "Info - NEFT/CHASH00005243419/BRIL"
+        const infoMatch = body.match(/Info\s*-\s*([^\n\r]+)/i);
         if (infoMatch) {
-            description = infoMatch[1];
+            const infoText = infoMatch[1].trim();
+
+            // Try to extract name from NEFT/IMPS format
+            const neftMatch = infoText.match(/(?:NEFT|IMPS|UPI)\/[^\/]+\/([^\s\.]+)/i);
+            if (neftMatch) {
+                merchantName = neftMatch[1].trim();
+            } else {
+                // Use the entire info text
+                merchantName = infoText.substring(0, 50);
+            }
         }
     }
+
+    // Clean up merchant name
+    merchantName = merchantName
+        .replace(/\s+/g, ' ')  // Replace multiple spaces with single space
+        .substring(0, 50)       // Limit length
+        .trim();
 
     return {
         amount,
         type: isCredit ? 'income' : 'expense',
         last4Digits,
         date,
-        description: description.substring(0, 50)
+        merchantName,
+        transactionMethod,
+        description: `${transactionMethod || 'Transaction'} - ${merchantName}`
     };
 };
 

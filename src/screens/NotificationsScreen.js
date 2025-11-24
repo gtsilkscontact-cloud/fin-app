@@ -37,11 +37,31 @@ const NotificationsScreen = () => {
         <View style={styles.card}>
             <View style={styles.cardContent}>
                 <View style={styles.headerRow}>
-                    <Text style={styles.type}>{item.type.toUpperCase()}</Text>
+                    <View style={styles.typeContainer}>
+                        <Text style={[styles.type, item.type === 'income' ? styles.typeIncome : styles.typeExpense]}>
+                            {item.type.toUpperCase()}
+                        </Text>
+                        {item.transactionMethod && (
+                            <Text style={styles.method}>{item.transactionMethod}</Text>
+                        )}
+                    </View>
                     <Text style={styles.date}>{item.date}</Text>
                 </View>
+
                 <Text style={styles.amount}>₹{item.amount}</Text>
-                <Text style={styles.description} numberOfLines={2}>{item.note}</Text>
+
+                {item.merchantName && (
+                    <Text style={styles.merchant}>🏪 {item.merchantName}</Text>
+                )}
+
+                {item.last4Digits && (
+                    <Text style={styles.cardInfo}>💳 •••• {item.last4Digits}</Text>
+                )}
+
+                {item.note && item.note !== item.merchantName && (
+                    <Text style={styles.description} numberOfLines={2}>{item.note}</Text>
+                )}
+
                 {item.location && (
                     <Text style={styles.location}>📍 {item.location}</Text>
                 )}
@@ -57,7 +77,7 @@ const NotificationsScreen = () => {
                     style={[styles.button, styles.confirmButton]}
                     onPress={() => handleConfirm(item)}
                 >
-                    <Text style={styles.confirmText}>Confirm Category</Text>
+                    <Text style={styles.confirmText}>Confirm & Categorize</Text>
                 </TouchableOpacity>
             </View>
         </View>
@@ -86,12 +106,48 @@ const styles = StyleSheet.create({
     list: { padding: 16 },
     card: { backgroundColor: '#fff', borderRadius: 12, marginBottom: 16, elevation: 2, overflow: 'hidden' },
     cardContent: { padding: 16 },
-    headerRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-    type: { fontSize: 12, fontWeight: 'bold', color: '#6200ee', backgroundColor: '#e8e0ff', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
+    headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+    typeContainer: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    type: {
+        fontSize: 11,
+        fontWeight: 'bold',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 4
+    },
+    typeExpense: {
+        color: '#dc2626',
+        backgroundColor: '#fee2e2'
+    },
+    typeIncome: {
+        color: '#059669',
+        backgroundColor: '#d1fae5'
+    },
+    method: {
+        fontSize: 10,
+        color: '#6b7280',
+        backgroundColor: '#f3f4f6',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 3,
+        fontWeight: '600'
+    },
     date: { fontSize: 12, color: '#999' },
-    amount: { fontSize: 24, fontWeight: 'bold', color: '#333', marginBottom: 4 },
-    description: { fontSize: 14, color: '#666', marginBottom: 8 },
-    location: { fontSize: 12, color: '#00B894', fontWeight: '500' },
+    amount: { fontSize: 28, fontWeight: 'bold', color: '#333', marginBottom: 8 },
+    merchant: {
+        fontSize: 16,
+        color: '#1f2937',
+        fontWeight: '600',
+        marginBottom: 6
+    },
+    cardInfo: {
+        fontSize: 13,
+        color: '#6b7280',
+        fontWeight: '500',
+        marginBottom: 6
+    },
+    description: { fontSize: 13, color: '#6b7280', marginBottom: 8 },
+    location: { fontSize: 12, color: '#059669', fontWeight: '500', marginTop: 4 },
     actions: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#eee' },
     button: { flex: 1, padding: 15, alignItems: 'center' },
     ignoreButton: { borderRightWidth: 1, borderRightColor: '#eee' },

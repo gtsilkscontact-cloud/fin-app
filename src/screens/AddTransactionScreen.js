@@ -43,7 +43,8 @@ const AddTransactionScreen = () => {
             // Pre-fill from pending transaction
             setAmount(prefill.amount.toString());
             setType(prefill.type);
-            setNote(prefill.note || '');
+            // Use merchantName if available, otherwise use note
+            setNote(prefill.merchantName || prefill.note || '');
             if (prefill.accountId) setSelectedAccountId(prefill.accountId);
             if (prefill.location) setCurrentLocation(prefill.location);
         } else if (accountIdFromRoute) {
@@ -57,8 +58,17 @@ const AddTransactionScreen = () => {
     useEffect(() => {
         if (!editMode && !prefill) {
             const fetchLocation = async () => {
-                const locationString = await getCurrentLocationWithArea();
-                setCurrentLocation(locationString);
+                const loc = await getCurrentLocationWithArea();
+                if (loc && (loc.area || loc.city)) {
+                    // Format object to string: "Area, City - Pincode"
+                    const parts = [];
+                    if (loc.area) parts.push(loc.area);
+                    if (loc.city) parts.push(loc.city);
+                    if (loc.postalCode) parts.push(loc.postalCode);
+
+                    const formattedLocation = parts.join(', ');
+                    setCurrentLocation(formattedLocation);
+                }
             };
             fetchLocation();
         }
@@ -83,7 +93,17 @@ const AddTransactionScreen = () => {
         setLoading(true);
 
         // Get location
-        const locationString = await getCurrentLocationWithArea();
+        let locationString = currentLocation;
+        if (!locationString) {
+            const loc = await getCurrentLocationWithArea();
+            if (loc && (loc.area || loc.city)) {
+                const parts = [];
+                if (loc.area) parts.push(loc.area);
+                if (loc.city) parts.push(loc.city);
+                if (loc.postalCode) parts.push(loc.postalCode);
+                locationString = parts.join(', ');
+            }
+        }
 
         const newTransaction = {
             id: editMode ? transaction.id : `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,

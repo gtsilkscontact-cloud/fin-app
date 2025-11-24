@@ -8,9 +8,10 @@ import { getCategoryDisplay, getCategoriesByType } from '../utils/CategoryManage
 // Configure notifications
 Notifications.setNotificationHandler({
     handleNotification: async () => ({
-        shouldShowAlert: true,
+        shouldShowBanner: true,
         shouldPlaySound: true,
         shouldSetBadge: false,
+        shouldShowList: true,
     }),
 });
 
